@@ -993,10 +993,14 @@ def getnomecompleto(zipname):
                         result = re.search('nome-instituicao-empresa=\"(.*)\" nome-orgao=',
                                            addressdata, re.DOTALL)
                         if result is None:
+                           result = re.search('nome-instituicao-empresa=\'(.*)\' nome-orgao=',
+                                           addressdata, re.DOTALL)
+                                           
+                        if result is None:
                             cc = 'Nao foi possivel extrair o endereco profissional'
                         else:
                             cc = result.group(1)
-                            ls_address_enterp.append(cc)
+                        ls_address_enterp.append(cc)
         # DataFrame nome completo e sobrenome
         df_fullname = pd.DataFrame({'ID': ls_name_id,
                                     'FULL_NAME': ls_name_full,

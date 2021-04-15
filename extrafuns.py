@@ -62,6 +62,8 @@ def fun_nomeppg():
 
 # identificando os ppg dos pesquisadores
 def fun_ppgs():
+    if not os.path.exists('./csv_producao/orientacoes_all.csv'):
+        return ''
     df = pd.read_csv('./csv_producao/orientacoes_all.csv',
                      header=0, sep=',')
     df = df.query('NATURE == "Dissertação de mestrado" \
