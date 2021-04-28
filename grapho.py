@@ -45,9 +45,16 @@ def getgrapho():
                           header=0)
     dfpaper_uniq = pd.read_csv('./csv_producao/periodicos_uniq.csv',
                                header=0)
+    dftrabevent = pd.read_csv('./csv_producao/trabevent_all.csv',
+                          header=0)
+    dftrabevent_uniq = pd.read_csv('./csv_producao/trabevent_uniq.csv',
+                               header=0)
     # paper uniq
     dfpaper['ID'] = dfpaper['ID'].apply(ss)
     dfpaper_uniq['ID'] = dfpaper_uniq['ID'].apply(ss)
+    dftrabevent['ID'] = dftrabevent['ID'].apply(ss)
+    dftrabevent_uniq['ID'] = dftrabevent_uniq['ID'].apply(ss)
+    
     # filtrando o ano
     # projetos
     dfppe_uniq['YEAR_INI'] = dfppe_uniq['YEAR_INI'].replace('VAZIO', -99)
@@ -73,6 +80,20 @@ def getgrapho():
     dfpaper_uniq = dfpaper_uniq[(dfpaper_uniq['YEAR']
                                  >= yyi) & (dfpaper_uniq['YEAR'] <= yyf)]
     # ------------------------------------------------------------
+    # trabalhos em eventos
+    dftrabevent['YEAR'] = dftrabevent['YEAR'].replace('VAZIO', -99)
+    dftrabevent_uniq['YEAR'] = dftrabevent_uniq['YEAR'].replace('VAZIO', -99)
+    num99 = dftrabevent[dftrabevent['YEAR'] == -99]
+    if len(num99) >= 1:
+        print('------------------------------------------------------------')
+        print('ATENCAO: ' + str(len(num99)) + 'trabalhos em evento sem ano de publicacao')
+        print('------------------------------------------------------------')
+    dftrabevent['YEAR'] = dftrabevent['YEAR'].apply(ff)
+    dftrabevent_uniq['YEAR'] = dftrabevent_uniq['YEAR'].apply(ff)
+    dftrabevent = dftrabevent[(dftrabevent['YEAR'] >= yyi) & (dftrabevent['YEAR'] <= yyf)]
+    dftrabevent_uniq = dftrabevent_uniq[(dftrabevent_uniq['YEAR']
+                                 >= yyi) & (dftrabevent_uniq['YEAR'] <= yyf)]
+    # ------------------------------------------------------------
     # ordenando por ano (crescente)
     dfppe_uniq_pesq = dfppe_uniq[dfppe_uniq['NATUREZA'] == 'PESQUISA']
     dfppe_uniq_pesq = dfppe_uniq_pesq.sort_values(['YEAR_INI'])
@@ -80,6 +101,8 @@ def getgrapho():
     dfppe_uniq_ext = dfppe_uniq_ext.sort_values(['YEAR_INI'])
     dfpaper = dfpaper.sort_values(['YEAR'])
     dfpaper_uniq = dfpaper_uniq.sort_values(['YEAR'])
+    dftrabevent = dftrabevent.sort_values(['YEAR'])
+    dftrabevent_uniq = dftrabevent_uniq.sort_values(['YEAR'])
     # ------------------------------------------------------------
     # carregando df com dados pessoais
     lscsv_fullname = glob.glob('./csv_producao/*fullname.csv')

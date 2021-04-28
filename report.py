@@ -37,7 +37,7 @@ def getrelatorio():
     config_file.close()
     # define como zero algumas variaveis, pois elas podem nao existir na
     # contagem
-    ppe_tot, pp_tot, liv_tot, chap_tot, acp_tot = 0, 0, 0, 0, 0
+    ppe_tot, pp_tot, liv_tot, chap_tot, acp_tot, acpte_tot= 0, 0, 0, 0, 0, 0
     # ------------------------------------------------------------
     # verificando a existencia dos arquivos
     # importando os data frames gerados pelo gettidy
@@ -169,6 +169,75 @@ def getrelatorio():
         plt.tight_layout()
         plt.savefig('./relatorio/figures/period_year_qualis.png')
         # plt.show()
+
+    # ------------------------------------------------------------
+    # dfpaper all - trabalhos em evento
+    try:
+        dftrabevent = pd.read_csv('./csv_producao/trabevent_all.csv',
+                              header=0, dtype='str')
+    except (OSError, IOError):
+        print('------------------------------------------------------------\n' +
+              'ATENCAO \n' +
+              'Não há arquivo com trabevent all \n' +
+              '------------------------------------------------------------')
+        html_print_trabevent_all = 'NO'
+    else:
+        html_print_trabevent_all = 'YES'
+        dftrabevent['YEAR'] = dftrabevent['YEAR'].replace('VAZIO', -99)
+        trabeventnum99 = dftrabevent[dftrabevent['YEAR'] == -99].reset_index(drop=True)
+        if len(trabeventnum99) >= 1:
+            print('------------------------------------------------------------')
+            print('ATENCAO: \n' + str(len(trabeventnum99)) +
+                  'trabalhos em evento sem ano de publicacao')
+            print('------------------------------------------------------------')
+        # filtrando ano
+        dftrabevent['YEAR'] = dftrabevent['YEAR'].apply(ff)
+        dftrabevent = dftrabevent[(dftrabevent['YEAR'] >= yyi) & (dftrabevent['YEAR'] <= yyf)]
+    # ------------------------------------------------------------
+    # dfpaper unique -- trabalhos em eventos
+    try:
+        dftrabevent_uniq = pd.read_csv('./csv_producao/trabevent_uniq.csv',
+                                   header=0, dtype='str')
+    except (OSError, IOError):
+        html_print_trabevent_uniq = 'NO'
+        print('------------------------------------------------------------\n' +
+              'ATENCAO \n' +
+              'Não há arquivo com trabevent unique \n' +
+              '------------------------------------------------------------')
+    else:
+        html_print_trabevent_uniq = 'YES'
+        dftrabevent_uniq['YEAR'] = dftrabevent_uniq['YEAR'].replace('VAZIO', -99)
+        trabeventnum99 = dftrabevent_uniq[dftrabevent_uniq['YEAR']
+                                == -99].reset_index(drop=True)
+        # filtrando ano
+        dftrabevent_uniq['YEAR'] = dftrabevent_uniq['YEAR'].apply(ff)
+        dftrabevent_uniq = dftrabevent_uniq[(dftrabevent_uniq['YEAR']
+                                     >= yyi) & (dftrabevent_uniq['YEAR'] <= yyf)]
+        dftrabevent_uniq = dftrabevent_uniq.sort_values(['YEAR'])
+        # GRAFICO artig completo periodico
+        acpte = dftrabevent_uniq.groupby(['YEAR'])['TITLE'].size().reset_index()
+        acpte_tot = acpte['TITLE'].sum()
+        plt.figure(figsize=(9, 5))
+        plt.bar(x=acpte['YEAR'], height=acpte['TITLE'])
+        plt.title('Trabalhos em eventos %i - %i' % (yyi, yyf))
+        plt.xticks(np.arange(yyi, yyf + 1, 1))
+        plt.xlabel('Ano')
+        plt.ylabel('Número de Trabalhos')
+        plt.tight_layout()
+        plt.savefig('./relatorio/figures/trabevent_dep_year.png')
+        # plt.show()
+        ## GRAFICO artig completo periodico por qualis - ainda não implementado
+        #acpq = dftrabevent_uniq.groupby(['QUALIS'])['TITLE'].size().reset_index()
+        ## acpq
+        #plt.figure(figsize=(9, 5))
+        #plt.bar(x=acpq['QUALIS'], height=acpq['TITLE'])
+        #plt.title('Trabalhos em eventos %i - %i' % (yyi, yyf))
+        #plt.xlabel('Qualis')
+        #plt.ylabel('Número de Trabalhos')
+        #plt.tight_layout()
+        #plt.savefig('./relatorio/figures/trabevent_year_qualis.png')
+        ## plt.show()
+        
     # ------------------------------------------------------------
     # dfbooks all
     try:
@@ -425,8 +494,9 @@ def getrelatorio():
     htmlfile.write('<a href="#projpesq">Projetos de pesquisa</a> \n <br>')
     htmlfile.write('<a href="#pubbookchap">Livros e capítulos</a> \n <br>')
     htmlfile.write('<a href="#pubperiod">Artigos em periódicos</a> \n <br>')
+    htmlfile.write('<a href="#pubtrabevent">Trabalhos em evento</a> \n <br>')
     htmlfile.write(
-        '<a href="#prodporpesq">Extrato de periódicos por integrante</a> \n <br>')
+        '<a href="#prodporpesq">Extrato da produção por integrante</a> \n <br>')
     htmlfile.write('<a href="#indcapes">Indicadores CAPES</a> \n <br>')
     # Equipe
     htmlfile.write('<a name="team"></a>' + '\n \n')
@@ -490,6 +560,8 @@ def getrelatorio():
                    (str(chap_tot) + '\n <br> \n'))
     htmlfile.write('Artigos completos publicados em periódicos: ' +
                    (str(acp_tot) + '\n <br> <br> \n'))
+    htmlfile.write('Trabalhos publicados em eventos: ' +
+                   (str(acpte_tot) + '\n <br> <br> \n'))
     htmlfile.write('Orientações:' + '\n <br>')
     if html_print_advi == 'NO':
         htmlfile.write('0' + '\n <br>')
@@ -628,6 +700,31 @@ def getrelatorio():
             '<figcaption>Publicações de periódicos por qualis.</figcaption>\n')
         htmlfile.write('</figure> \n')
         htmlfile.write('\n <hr> \n \n')
+        
+    # Trabalhos em evento
+    htmlfile.write('<a name="pubtrabevent"></a>' + '\n \n')
+    htmlfile.write('<h1>Trabalhos em evento</h1> \n')
+    if html_print_trabevent_uniq == 'NO':
+        htmlfile.write('Não há trabalhos em evento publicados <br>\n')
+    else:
+        # Grafico de producao de trabalhos em evento por ano
+        htmlfile.write('<h2>Produção de trabalhos em evento por ano</h2> \n')
+        htmlfile.write('<figure> \n')
+        htmlfile.write('<img src="./figures/trabevent_dep_year.png" alt="" ')
+        htmlfile.write('width = "560" height = "auto" >\n')
+        htmlfile.write(
+            '<figcaption>Número de publicações de trabalhos em eventos por ano.</figcaption>\n')
+        htmlfile.write('</figure> \n')
+        htmlfile.write('\n <hr> \n \n')
+        # Grafico de producao por qualis - ainda não implementado
+        #htmlfile.write('<h2>Produção de trabalhos em evento por qualis</h2> \n')
+        #htmlfile.write('<figure> \n')
+        #htmlfile.write('<img src="./figures/trabevent_year_qualis.png" alt="" ')
+        #htmlfile.write('width = "560" height = "auto" >\n')
+        #htmlfile.write(
+        #    '<figcaption>Publicações de trabalhos em evento por qualis.</figcaption>\n')
+        #htmlfile.write('</figure> \n')
+        #htmlfile.write('\n <hr> \n \n')
 
     # Grafico de interacao no grupos APENAS em artigos
     if html_print_paper_uniq == 'NO':
@@ -674,10 +771,33 @@ def getrelatorio():
         htmlfile.write('\n </i>' + '\n')
         htmlfile.write('</li>' + '\n \n')
     htmlfile.write('</ol> \n')
+    
+    # lista de publicacoes em trabalhos em evento
+    htmlfile.write('<h2>Relação de trabalhos em evento</h2> \n')
+    htmlfile.write('<ol class="custom-counter">')
+    for idd in range(len(dftrabevent_uniq)):
+        pap_title = dftrabevent_uniq.iloc[idd, 0]
+        pap_year = dftrabevent_uniq.iloc[idd, 1]
+        pap_doi = dftrabevent_uniq.iloc[idd, 2]
+        pap_lang = dftrabevent_uniq.iloc[idd, 3]
+        pap_nature = dftrabevent_uniq.iloc[idd, 4]
+        pap_scope = dftrabevent_uniq.iloc[idd, 5]
+        pap_event = dftrabevent_uniq.iloc[idd, 6]
+        pap_isbn = dftrabevent_uniq.iloc[idd, 7]
+        pap_au = dftrabevent_uniq['AUTHOR'].iloc[idd]
+        htmlfile.write('<li>' + '\n')
+        htmlfile.write('<i>' + '\n')
+        htmlfile.write('<u>' + str(pap_title) + '</u>. ano: <u>' + str(pap_year) + '</u>, ' +
+                       str(pap_event) + ' (' + str(pap_scope) + ', ' + str(pap_nature) + ', ' +
+                       str(pap_lang) + '), ISBN: ' + str(pap_isbn) + '. ' + str(pap_au))
+        htmlfile.write('\n </i>' + '\n')
+        htmlfile.write('</li>' + '\n \n')
+    htmlfile.write('</ol> \n')
+    
     # artig completo periodico por qualis para cada pesquisador
     htmlfile.write('<a name="prodporpesq"></a>' + '\n \n')
     htmlfile.write(
-        '<h2>Produção individual de projetos e periódicos por ano e qualis ' + str(int(yyi)) + '-' + str(int(yyf)) + '</h2> \n')
+        '<h2>Produção individual de projetos, periódicos e trabalhos ' + str(int(yyi)) + '-' + str(int(yyf)) + '</h2> \n')
     for idd in range(len(dffullname)):
         # full name and link lattes
         htmlfile.write('<b><u>' + dffullname.iloc[idd, 1] + '</u></b> <br>')
@@ -793,7 +913,28 @@ def getrelatorio():
             # print(tabulate(b.head(), headers="keys", tablefmt='markdown'))
             mm = (tabulate(b, headers="keys", tablefmt='html'))
             htmlfile.write(str(mm))
+        # trabalhos em evento
+        if html_print_trabevent_all == 'NO':
+            htmlfile.write('Não há trabalhos em evento \n')
+        else:
+            b = dftrabevent[dftrabevent['ID'] == dffullname.iloc[idd, 0]]
+            b = b.groupby(['FULL_NAME', 'YEAR', 'NATURE'])[
+                'TITLE'].size().unstack().reset_index(drop=False)
+            b = b.fillna(0)
+            b.drop('FULL_NAME', axis=1, inplace=True)
+            t = dftrabevent[dftrabevent['ID'] == dffullname.iloc[idd, 0]]
+            t = t.groupby(['FULL_NAME', 'YEAR', 'NATURE'])[
+                'TITLE'].size().reset_index(drop=False)
+            tot = t['TITLE'].sum()
+            # print(tot)
+            htmlfile.write('<li>produção total de trabalhos em evento = ' +
+                           str(tot) + '</li>\n <br> \n')
+            # print(b.head())
+            # print(tabulate(b.head(), headers="keys", tablefmt='markdown'))
+            mm = (tabulate(b, headers="keys", tablefmt='html'))
+            htmlfile.write(str(mm))
         htmlfile.write('\n <hr> \n')
+
         # ------------------------------------------------------------
 
     # ------------------------------------------------------------
@@ -831,6 +972,24 @@ def getrelatorio():
             '<h2> Resumo da produção de artigos em periódicos do grupo ' +
             str(int(yyi)) + '-' + str(int(yyf)) + '</h2> \n <br> \n')
         htmlfile.write(ggt + '\n <br> \n <br> \n')
+            
+    # ------------------------------------------------------------
+    # Tabela de trabalhos em evento
+    if html_print_trabevent_all == 'NO':
+        htmlfile.write('Não há trabalhos em evento <br>\n')
+    else:
+        gg = dftrabevent
+        gg = gg.groupby(['FULL_NAME', 'NATURE'])[
+            'TITLE'].size().unstack().reset_index(drop=False)
+        gg.fillna(0, inplace=True)
+        gg['TOTAL'] = gg.sum(axis=1)
+        ggt = (tabulate(gg, headers="keys", tablefmt='html'))
+        # print(ggt)
+        htmlfile.write(
+            '<h2> Resumo da produção de trabalhos em evento do grupo ' +
+            str(int(yyi)) + '-' + str(int(yyf)) + '</h2> \n <br> \n')
+        htmlfile.write(ggt + '\n <br> \n <br> \n')
+
 
         if len(ppenum99) >= 1:
             htmlfile.write('<b style="color:red;"> ATENCAO:\n ' +
@@ -839,12 +998,21 @@ def getrelatorio():
             for tt in range(len(ppenum99)):
                 htmlfile.write('\n <li>' + ppenum99.iloc[tt, 0] + '\n </li>')
             htmlfile.write('<hr> \n')
+        
         if len(pernum99) >= 1:
             htmlfile.write('<b style="color:red;"> ATENCAO:\n ' +
                            str(len(pernum99)) +
                            'periódicos sem ano</b>\n')
             for tt in range(len(pernum99)):
                 htmlfile.write('\n <li>' + pernum99.iloc[tt, 0] + '\n </li>')
+            htmlfile.write('<hr> \n')
+
+        if len(trabeventnum99) >= 1:
+            htmlfile.write('<b style="color:red;"> ATENCAO:\n ' +
+                           str(len(trabeventnum99)) +
+                           'periódicos sem ano</b>\n')
+            for tt in range(len(trabeventnum99)):
+                htmlfile.write('\n <li>' + trabeventnum99.iloc[tt, 0] + '\n </li>')
             htmlfile.write('<hr> \n')
 
     # ------------------------------------------------------------

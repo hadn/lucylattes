@@ -123,6 +123,57 @@ def getverificacao():
         pathfilename = str('./csv_producao/periodicos_uniq.csv')
         dfpaper_uniq.to_csv(pathfilename, index=False)
     # ------------------------------------------------------------
+    # dfpaper - trabalhos em eventos
+    try:
+        dfpaper = pd.read_csv('./csv_producao/trabevent_all.csv',
+                              header=0, dtype='str')
+    except (OSError, IOError):
+        print('------------------------------------------------------------\n' +
+              'ATENCAO \n' +
+              'Nao ha arquivo com trabevent all \n' +
+              '------------------------------------------------------------')
+    else:
+        lsind = []
+        for i in range(len(dfpaper['YEAR'])):
+            si = dfpaper.iloc[i, 1]
+            try:
+                int(si)
+            except ValueError:
+                print('------------------------------------------------------------\n' +
+                      'ATENCAO \n' +
+                      'Impossível extrair ANO para o trabalho \n' +
+                      str(dfpaper.iloc[i, 0]) + ' \n do autor: ' +
+                      str(dfpaper.iloc[i, 12]) + '... PAPER EXCLUIDO \n'
+                      '------------------------------------------------------------')
+                # sys.exit("Verique o lattes do autor")
+                lsind.append(i)
+        dfpaper.drop(lsind, axis=0, inplace=True)
+        dfpaper.reset_index()
+        pathfilename = str('./csv_producao/trabevent_all.csv')
+        dfpaper.to_csv(pathfilename, index=False)
+    # ------------------------------------------------------------
+    # dfpaper_uniq
+    try:
+        dfpaper_uniq = pd.read_csv('./csv_producao/trabevent_uniq.csv',
+                                   header=0, dtype='str')
+    except (OSError, IOError):
+        print('------------------------------------------------------------\n' +
+              'ATENCAO \n' +
+              'Nao ha arquivo com trabevent unique \n' +
+              '------------------------------------------------------------')
+    else:
+        lsind = []
+        for i in range(len(dfpaper_uniq['YEAR'])):
+            si = dfpaper_uniq.iloc[i, 1]
+            try:
+                int(si)
+            except ValueError:
+                lsind.append(i)
+        dfpaper_uniq.drop(lsind, axis=0, inplace=True)
+        dfpaper_uniq.reset_index()
+        pathfilename = str('./csv_producao/trabevent_uniq.csv')
+        dfpaper_uniq.to_csv(pathfilename, index=False)
+    # ------------------------------------------------------------
     # dfbooks
     try:
         dfbooks = pd.read_csv('./csv_producao/livros_all.csv',

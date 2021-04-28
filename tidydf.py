@@ -148,6 +148,65 @@ def gettidydf():
     dfpaper_uniq.to_csv(pathfilename, index=False)
     print(pathfilename, ' gravado com',
           len(dfpaper_uniq['TITLE']), ' artigos')
+    
+    # ------------------------------------------------------------
+    # Producao bibliografica
+    # ------------------------------------------------------------
+    # df com todos os trabalhos em eventos
+    lscsv_paper = glob.glob('./csv_producao/*trabevent.csv')
+    dfpaper = pd.DataFrame()
+    lsid = []
+    for i in range(len(lscsv_paper)):
+        a = pd.read_csv(lscsv_paper[i], header=0)
+        dfpaper = dfpaper.append(a, ignore_index=False)
+        iid = fun_idd_unixwind(plat_sys, lscsv_paper, i)
+        # iid = str(lscsv_paper[i].split('_')[1].split('/')[1])
+        idrep = np.repeat(iid, len(a['TITLE']))
+        lsid.append(idrep)
+    dfpaper['ID'] = np.concatenate(lsid)
+    lscsv_fullname = glob.glob('./csv_producao/*fullname.csv')
+    len(lscsv_fullname)
+    # df com nome completo, sobrenome e iid
+    dffullname = pd.DataFrame()
+    for i in range(len(lscsv_fullname)):
+        a = pd.read_csv(lscsv_fullname[i], header=0, dtype='str')
+        dffullname = dffullname.append(a, ignore_index=False)
+    # passando IID para string, para poder comparar com dfpaper
+    # cancelei a ss() pq o read_csv do a esta com dtype='str
+    # dffullname['ID'] = dffullname['ID'].apply(ss)
+    dfpaper = pd.merge(dfpaper, dffullname, on='ID')
+    dffullname = dffullname.reset_index(drop=True)
+    # processo para excluir PAPER repetido busca o sobrenome do autor no
+    # dffullname por meio do iid lattes. divide a coluna autores do
+    # paper.
+    # atual: a ordem já vem no dfpaper
+    # antiga: verifica a ordem do sobrenome no author_split
+    #lsauthor_order = []
+    #order = -99
+    # for i in range(len(dfpaper['ID'])):
+    #     lastname = dffullname[dffullname['ID']
+    #                           == (dfpaper.iloc[i, 9])]
+    #     lastname = lastname.iloc[0, 2]
+    #     author_split = dfpaper.iloc[i, 7].split(',')
+    #     # print(lastname)
+    #     # print(len(author_split))
+    #     for aa in range(len(author_split)):
+    #         test = lastname in author_split[aa]
+    #         if test == True:
+    #             order = aa + 1
+    #     lsauthor_order.append(order)
+    #dfpaper['OR'] = lsauthor_order
+    # retirando paper repetido, fica para o author com maior importancia
+    dfpaper_uniq = dfpaper.sort_values(['ORDER_OK'])
+    dfpaper_uniq.drop_duplicates(['TITLE'], inplace=True)
+    pathfilename = str('./csv_producao/trabevent_all.csv')
+    dfpaper.to_csv(pathfilename, index=False)
+    print(pathfilename, ' gravado com',
+          len(dfpaper['TITLE']), ' artigos')
+    pathfilename = str('./csv_producao/trabevent_uniq.csv')
+    dfpaper_uniq.to_csv(pathfilename, index=False)
+    print(pathfilename, ' gravado com',
+          len(dfpaper_uniq['TITLE']), ' artigos')
 
     # ------------------------------------------------------------
     # Producao bibliografica LIVROS
